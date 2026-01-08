@@ -434,33 +434,53 @@ def create_heatmap(results_df):
     results_df["color_value"] = results_df["status"].map(color_map)
     
     # Create heatmap
-    heatmap_customdata = [[
-        [concentration, status_label, action_level, escalation_level, times_threshold]
-        for concentration, status_label, action_level, escalation_level, times_threshold in zip(
-            results_df["concentration"],
-            results_df["status_label"],
-            results_df["action_level"],
-            results_df["escalation_level"],
-            results_df["times_threshold"]
-        )
-    ]]
+    row_labels = ["Action Level", "Escalation Level"]
+    status_row = [color_map[s] for s in results_df["status"]]
+    heatmap_customdata = [
+        [
+            [concentration, status_label, action_level, escalation_level, times_threshold, times_escalation]
+            for concentration, status_label, action_level, escalation_level, times_threshold, times_escalation in zip(
+                results_df["concentration"],
+                results_df["status_label"],
+                results_df["action_level"],
+                results_df["escalation_level"],
+                results_df["times_threshold"],
+                results_df["times_escalation"]
+            )
+        ],
+        [
+            [concentration, status_label, action_level, escalation_level, times_threshold, times_escalation]
+            for concentration, status_label, action_level, escalation_level, times_threshold, times_escalation in zip(
+                results_df["concentration"],
+                results_df["status_label"],
+                results_df["action_level"],
+                results_df["escalation_level"],
+                results_df["times_threshold"],
+                results_df["times_escalation"]
+            )
+        ]
+    ]
     
     fig = go.Figure(data=go.Heatmap(
-        z=[[color_map[s] for s in results_df["status"]]],
+        z=[status_row, status_row],
         x=results_df["analyte"],
-        y=["Status"],
+        y=row_labels,
         colorscale=[
             [0, STATUS_GREEN],
             [0.5, STATUS_ORANGE],
             [1, STATUS_RED]
         ],
+        xgap=2,
+        ygap=2,
         showscale=False,
         hovertemplate=(
             "<b>%{x}</b>"
+            "<br>Threshold Row: %{y}"
             "<br>Concentration: %{customdata[0]:.4f} mg/L"
             "<br>Action Level: %{customdata[2]:.4f} mg/L"
             "<br>Escalation Level: %{customdata[3]:.4f} mg/L"
-            "<br>Multiplier: %{customdata[4]:.1f}x (vs action level)"
+            "<br>Action Multiplier: %{customdata[4]:.1f}x"
+            "<br>Escalation Multiplier: %{customdata[5]:.1f}x"
             "<br>Status: %{customdata[1]}"
             "<extra></extra>"
         ),
@@ -469,12 +489,21 @@ def create_heatmap(results_df):
     
     # Add text annotations
     for i, row in results_df.iterrows():
+        action_text = f"{row['times_threshold']:.1f}x" if row["times_threshold"] >= 1 else "OK"
+        escalation_text = f"{row['times_escalation']:.1f}x" if row["times_escalation"] >= 1 else "OK"
         fig.add_annotation(
             x=row["analyte"],
-            y="Status",
-            text=f"{row['times_threshold']:.1f}x" if row['times_threshold'] >= 1 else "OK",
+            y=row_labels[0],
+            text=action_text,
             showarrow=False,
-            font=dict(color=TEXT_BLACK, size=12, family="Hind")
+            font=dict(color=TEXT_BLACK, size=11, family="Hind")
+        )
+        fig.add_annotation(
+            x=row["analyte"],
+            y=row_labels[1],
+            text=escalation_text,
+            showarrow=False,
+            font=dict(color=TEXT_BLACK, size=11, family="Hind")
         )
     
     fig.update_layout(
@@ -489,9 +518,10 @@ def create_heatmap(results_df):
         ),
         yaxis=dict(
             title=dict(text="", font=dict(size=12, color=TEXT_BLACK, family="Hind")),
-            tickfont=dict(size=12, color=TEXT_BLACK, family="Hind")
+            tickfont=dict(size=12, color=TEXT_BLACK, family="Hind"),
+            autorange="reversed"
         ),
-        height=300,
+        height=340,
         margin=dict(l=50, r=50, t=50, b=150),
         paper_bgcolor=PLOT_BG,
         plot_bgcolor=PLOT_BG,
@@ -585,7 +615,7 @@ if "results" not in st.session_state:
 col_logo, col_title = st.columns([1, 5])
 with col_logo:
     try:
-        st.image("logo.png", width=100)
+        st.image("logo.png", width=200)
     except:
         st.markdown(f"<div style='background-color:{PRIMARY_GREEN}; padding:20px; border-radius:10px; text-align:center;'><span style='font-size:24px; font-weight:bold; color:{DARK_GREY};'>H1</span></div>", unsafe_allow_html=True)
 
@@ -727,8 +757,9 @@ if analyze_clicked:
             
             status = get_status(concentration, data["action_level"], data["escalation_level"])
             
-            # Calculate times above action level threshold
+            # Calculate times above thresholds
             times_threshold = concentration / data["action_level"]
+            times_escalation = concentration / data["escalation_level"]
             
             results.append({
                 "analyte": analyte,
@@ -738,6 +769,7 @@ if analyze_clicked:
                 "status": status,
                 "status_label": status.capitalize(),
                 "times_threshold": times_threshold,
+                "times_escalation": times_escalation,
                 "why_it_matters": data["why_it_matters"],
                 "citation": data["citation"],
                 "message": get_status_message(status, analyte, concentration, data)

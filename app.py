@@ -585,7 +585,7 @@ if "results" not in st.session_state:
 col_logo, col_title = st.columns([1, 5])
 with col_logo:
     try:
-        st.image("logo.png", width=400)
+        st.image("logo.png", width=100)
     except:
         st.markdown(f"<div style='background-color:{PRIMARY_GREEN}; padding:20px; border-radius:10px; text-align:center;'><span style='font-size:24px; font-weight:bold; color:{DARK_GREY};'>H1</span></div>", unsafe_allow_html=True)
 

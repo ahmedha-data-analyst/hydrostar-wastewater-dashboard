@@ -414,9 +414,9 @@ def get_status_message(status, analyte, concentration, data):
     if status == "safe":
         return f"Concentration is within safe limits (below {data['action_level']} mg/L action level)."
     elif status == "action":
-        return f"ACTION LEVEL REACHED: This could start happening - {data['why_it_matters']} Reference: {data['citation']}"
+        return f"ACTION LEVEL REACHED: This could start happening - {data['why_it_matters']}"
     else:
-        return f"ESCALATION LEVEL REACHED: This is serious and green hydrogen production should be stopped. {data['why_it_matters']} Reference: {data['citation']}"
+        return f"ESCALATION LEVEL REACHED: This is serious and green hydrogen production should be stopped. {data['why_it_matters']}"
 
 
 def create_heatmap(results_df):
@@ -635,13 +635,13 @@ with st.sidebar:
     
     ph_type = st.selectbox(
         "Select Wastewater pH Type",
-        options=["Alkaline pH", "Neutral pH"],
+        options=["Alkaline pH (over 8)", "Neutral pH (5.5 to 7.5)"],
         index=1,
         help="Select whether your wastewater is alkaline or neutral in pH"
     )
     
     # Get the appropriate data based on pH selection
-    current_data = ALKALINE_DATA if ph_type == "Alkaline pH" else NEUTRAL_DATA
+    current_data = ALKALINE_DATA if ph_type == "Alkaline pH (over 8)" else NEUTRAL_DATA
     analyte_options = list(current_data.keys())
     
     st.markdown("---")
